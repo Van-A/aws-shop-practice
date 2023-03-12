@@ -26,6 +26,18 @@ provider:
   region: us-east-1
   httpApi:
     cors: true
+  iam:
+    role:
+      statements:
+          - Effect: Allow
+            Action:
+              - dynamodb:Query
+              - dynamodb:Scan
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+            Resource: "*"
 
 # you can overwrite defaults here
 #  stage: dev
@@ -68,12 +80,38 @@ functions:
       - httpApi:
           path: /products
           method: get
+    environment:
+      PRODUCTS_TABLE_NAME: shop_products   
+      STOCKS_TABLE_NAME: shop_stocks   
   getProductsById:
     handler: handler.getProductsById
     events:
       - httpApi:
           path: /products/{productId}
           method: get
+    environment:
+      PRODUCTS_TABLE_NAME: shop_products 
+      STOCKS_TABLE_NAME: shop_stocks 
+      
+  createProduct:
+    handler: handler.createProduct
+    events:
+      # - httpApi:
+      #     path: /products
+      #     method: post
+      #     request:
+      #       schemas:
+      #         application/json: ${file(../schemas/createProductSchema.json)}
+      - http:
+          path: /products
+          method: post
+          cors: true
+          request:
+            schemas:
+              application/json: ${file(../schemas/createProductSchema.json)}
+    environment:
+      PRODUCTS_TABLE_NAME: shop_products 
+      STOCKS_TABLE_NAME: shop_stocks 
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events
 #    Check the event documentation for details

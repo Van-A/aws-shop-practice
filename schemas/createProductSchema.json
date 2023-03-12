@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema",
+  "type": "object",
+  "title": "Create Item Schema",
+  "required": ["price", "title"],
+  "properties": {
+    "description": {
+      "type": "string"
+    },
+    "price": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "title": {
+      "type": "string"
+    }
+  }
+}
