@@ -6,7 +6,6 @@ provider:
   region: us-east-1
   httpApi:
     cors: true
-
   iamRoleStatements:
     - Effect: "Allow"
       Action: "s3:ListBucket"
@@ -17,6 +16,15 @@ provider:
         - "s3:*"
       Resource:
         - "arn:aws:s3:::csv-parser-bucket-2023/*"
+    - Effect: Allow
+      Action: sqs:*
+      Resource:
+        # - Fn::ImportValue: "SQSQueueArn"
+        - "arn:aws:sqs:us-east-1:457593347727:catalogItemsQueue"
+  environment:
+    IMPORT_BUCKET: csv-parser-bucket-2023
+    SQS_URL: https://sqs.us-east-1.amazonaws.com/457593347727/catalogItemsQueue
+    # SQS_URL: {"Fn::ImportValue": "SQSQueueUrl"}
 
 functions:
   importProductsFile:
