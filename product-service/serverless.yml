@@ -29,15 +29,63 @@ provider:
   iam:
     role:
       statements:
-          - Effect: Allow
-            Action:
-              - dynamodb:Query
-              - dynamodb:Scan
-              - dynamodb:GetItem
-              - dynamodb:PutItem
-              - dynamodb:UpdateItem
-              - dynamodb:DeleteItem
-            Resource: "*"
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource: "*"
+        - Effect: Allow
+          Action: sqs:*
+          Resource:
+            - Fn::GetAtt: [SQSQueue, Arn]
+        - Effect: Allow
+          Action: "sns:*"
+          Resource:
+            Ref: SNSTopic
+  environment:
+    PRODUCTS_TABLE_NAME: shop_products   
+    STOCKS_TABLE_NAME: shop_stocks
+    SNS_ARN:
+      Ref: SNSTopic
+
+# you can add CloudFormation resource templates here
+#resources:
+#  Resources:
+#    NewResource:
+#      Type: AWS::S3::Bucket
+#      Properties:
+#        BucketName: my-new-bucket
+resources:
+  Resources:
+    SQSQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: catalogItemsQueue
+    SNSTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: createProductTopic
+    SNSSubscription:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Endpoint: andrei_vaniushyn@epam.com
+        Protocol: email
+        TopicArn:
+          Ref: SNSTopic
+  Outputs:
+    SQSQueueUrl:
+      Value:
+        Ref: SQSQueue
+      Export:
+        Name: SQSQueueUrl
+    SQSQueueArn:
+      Value: !GetAtt SQSQueue.Arn
+      Export:
+        Name: SQSQueueArn
 
 # you can overwrite defaults here
 #  stage: dev
@@ -89,19 +137,13 @@ functions:
       - httpApi:
           path: /products/{productId}
           method: get
-    environment:
-      PRODUCTS_TABLE_NAME: shop_products 
-      STOCKS_TABLE_NAME: shop_stocks 
+    # environment:
+    #   PRODUCTS_TABLE_NAME: shop_products 
+    #   STOCKS_TABLE_NAME: shop_stocks 
       
   createProduct:
     handler: handler.createProduct
     events:
-      # - httpApi:
-      #     path: /products
-      #     method: post
-      #     request:
-      #       schemas:
-      #         application/json: ${file(../schemas/createProductSchema.json)}
       - http:
           path: /products
           method: post
@@ -109,9 +151,24 @@ functions:
           request:
             schemas:
               application/json: ${file(../schemas/createProductSchema.json)}
+    # environment:
+    #   PRODUCTS_TABLE_NAME: shop_products 
+    #   STOCKS_TABLE_NAME: shop_stocks 
+
+  catalogBatchProcess:
+    handler: handler.catalogBatchProcess
+    events:
+      - sqs:
+          batchSize: 5
+          arn:
+            Fn::GetAtt:
+              - SQSQueue
+              - Arn
+
     environment:
-      PRODUCTS_TABLE_NAME: shop_products 
-      STOCKS_TABLE_NAME: shop_stocks 
+      SQS_URL:
+        Ref: SQSQueue
+
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events
 #    Check the event documentation for details
@@ -152,13 +209,6 @@ functions:
 #    environment:
 #      variable2: value2
 
-# you can add CloudFormation resource templates here
-#resources:
-#  Resources:
-#    NewResource:
-#      Type: AWS::S3::Bucket
-#      Properties:
-#        BucketName: my-new-bucket
 #  Outputs:
 #     NewOutput:
 #       Description: "Description for the output"

@@ -53,9 +53,12 @@ async function importProductsFile(event) {
 }
 
 async function importFileParser(event) {
+  console.log("SQS_URL", process.env.SQS_URL);
+  const sqs = new AWS.SQS();
+
   for (const record of event.Records) {
     const params = {
-      Bucket: "csv-parser-bucket-2023",
+      Bucket: process.env.IMPORT_BUCKET,
       Key: record.s3.object.key,
     };
 
@@ -64,6 +67,15 @@ async function importFileParser(event) {
     try {
       const parsedCsv = await parseS3Stream(s3Stream);
       console.log("parsedCsv", parsedCsv);
+      for (const product of parsedCsv) {
+        const params = {
+          QueueUrl: process.env.SQS_URL,
+          MessageBody: JSON.stringify(product),
+        };
+        console.log('params', params);
+        const res = await sqs.sendMessage(params).promise();
+        console.log(res)
+      }
     } catch (error) {
       console.log(error);
     }
