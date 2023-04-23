@@ -26,6 +26,18 @@ provider:
     SQS_URL: https://sqs.us-east-1.amazonaws.com/457593347727/catalogItemsQueue
     # SQS_URL: {"Fn::ImportValue": "SQSQueueUrl"}
 
+resources:
+  Resources:
+    Unauthorized:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseParameters:
+          "gatewayresponse.header.Access-Control-Allow-Origin": "'*'"
+          "gatewayresponse.header.Access-Control-Allow-Headers": "'*'"
+        ResponseType: "DEFAULT_4XX"
+        RestApiId:
+          Ref: "ApiGatewayRestApi"
+
 functions:
   importProductsFile:
     handler: handler.importProductsFile

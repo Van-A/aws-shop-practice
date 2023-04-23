@@ -1,7 +1,12 @@
 const AWS = require("aws-sdk");
 const csv = require("csv-parser");
 
-const s3 = new AWS.S3();
+const s3 = new AWS.S3(
+  {
+    apiVersion: '2006-03-01',
+    signatureVersion: 'v4',
+  }
+);
 
 const getSignedUrlPromise = (params) =>
   new Promise((resolve, reject) =>
@@ -41,6 +46,9 @@ async function importProductsFile(event) {
     const url = await getSignedUrlPromise(params);
     return {
       statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+      },
       body: url,
     };
   } catch (error) {
